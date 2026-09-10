@@ -35,8 +35,18 @@ app.use((req, res, next) => {
   next();
 });
 
+// Root API welcome route
+app.get("/", (req, res) => {
+  res.status(200).json({
+    message: "🚀 Task Management System API is running live!",
+    health: "/api/health",
+    documentation: "https://github.com/Nandhakkishore/task-management-system",
+  });
+});
+
 // Health check route
 app.get("/api/health", (req, res) => {
+
   res.status(200).json({
     status: "ok",
     timestamp: new Date().toISOString(),
