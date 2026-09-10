@@ -14,10 +14,14 @@ const CLIENT_URL = process.env.CLIENT_URL || "http://localhost:5173";
 // Middleware
 app.use(
   cors({
-    origin: [CLIENT_URL, "http://localhost:5173", "http://127.0.0.1:5173"],
+    origin: (origin, callback) => {
+      // Allow requests with no origin (curl/Postman) or Vercel / localhost domains
+      callback(null, true);
+    },
     credentials: true,
   })
 );
+
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
