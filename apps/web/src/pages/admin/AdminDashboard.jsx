@@ -64,6 +64,8 @@ export const AdminDashboard = () => {
   });
 
   const [formError, setFormError] = useState("");
+  const [updatingEmpId, setUpdatingEmpId] = useState(null);
+  const [roleChangeSuccessMsg, setRoleChangeSuccessMsg] = useState("");
 
   // Fetch Dashboard Stats
   const { data: statsData } = useQuery({
@@ -153,6 +155,33 @@ export const AdminDashboard = () => {
       }
     },
   });
+
+  // Mutation: Update Employee Role (Admin or Employee)
+  const updateRoleMutation = useMutation({
+    mutationFn: async ({ employeeId, newRole }) => {
+      setUpdatingEmpId(employeeId);
+      const res = await api.patch(`/employees/${employeeId}/role`, { role: newRole });
+      return res.data;
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries(["employees"]);
+      setRoleChangeSuccessMsg(data.message || "Role updated successfully");
+      setTimeout(() => setRoleChangeSuccessMsg(""), 4000);
+    },
+    onError: (err) => {
+      setFormError(err.response?.data?.error || "Failed to update employee role");
+      setTimeout(() => setFormError(""), 5000);
+    },
+    onSettled: () => {
+      setUpdatingEmpId(null);
+    },
+  });
+
+  const handleRoleChange = (employeeId, newRole) => {
+    setFormError("");
+    setRoleChangeSuccessMsg("");
+    updateRoleMutation.mutate({ employeeId, newRole });
+  };
 
   const handleCreateTaskSubmit = (e) => {
     e.preventDefault();
@@ -537,7 +566,11 @@ export const AdminDashboard = () => {
             <div className="flex justify-between items-center mb-4">
               <p className="text-xs font-semibold text-slate-500">Total registered members: {employees.length}</p>
               <button
-                onClick={() => setIsCreateEmployeeView(true)}
+                onClick={() => {
+                  setFormError("");
+                  setRoleChangeSuccessMsg("");
+                  setIsCreateEmployeeView(true);
+                }}
                 className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-extrabold shadow-sm flex items-center gap-1.5"
               >
                 <UserPlus className="w-3.5 h-3.5" />
@@ -545,24 +578,82 @@ export const AdminDashboard = () => {
               </button>
             </div>
 
+            {/* Notification & Error Banners inside directory */}
+            {roleChangeSuccessMsg && (
+              <div className="mb-4 p-3 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-semibold flex items-center gap-2">
+                <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                <span>{roleChangeSuccessMsg}</span>
+              </div>
+            )}
+
+            {formError && isEmployeeModalOpen && !isCreateEmployeeView && (
+              <div className="mb-4 p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs font-semibold flex items-center gap-2">
+                <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
+                <span>{formError}</span>
+              </div>
+            )}
+
             <div className="space-y-3 max-h-[60vh] overflow-y-auto pr-1">
               {employees.map((emp) => (
                 <div
                   key={emp.id}
-                  className="p-3.5 bg-slate-50 border border-slate-200 rounded-2xl flex items-center justify-between"
+                  className="p-3.5 bg-white hover:bg-slate-50 border border-slate-200 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-3 transition-colors shadow-xs"
                 >
-                  <div>
-                    <div className="text-xs font-bold text-slate-900 flex items-center gap-2">
-                      {emp.name}
-                      <span className="text-[10px] px-1.5 py-0.2 rounded bg-indigo-100 text-indigo-700 font-mono font-bold">
-                        {emp.role}
-                      </span>
+                  <div className="flex items-center gap-3">
+                    <div
+                      className={`h-9 w-9 rounded-xl flex items-center justify-center font-black text-xs text-white shrink-0 shadow-sm ${
+                        emp.role === "admin"
+                          ? "bg-gradient-to-br from-purple-600 to-indigo-600"
+                          : "bg-gradient-to-br from-indigo-600 to-blue-600"
+                      }`}
+                    >
+                      {emp.name ? emp.name.slice(0, 2).toUpperCase() : "EM"}
                     </div>
-                    <div className="text-[11px] text-slate-500 font-medium mt-0.5">{emp.email} • {emp.department || "General"}</div>
+                    <div>
+                      <div className="text-xs font-bold text-slate-900 flex items-center gap-2">
+                        {emp.name}
+                        {emp.id === user?.id && (
+                          <span className="text-[9px] px-1.5 py-0.2 rounded-md bg-indigo-50 text-indigo-700 font-bold border border-indigo-200">
+                            You
+                          </span>
+                        )}
+                      </div>
+                      <div className="text-[11px] text-slate-500 font-medium mt-0.5">
+                        {emp.email} • <span className="text-slate-400">{emp.department || "General"}</span>
+                      </div>
+                    </div>
                   </div>
-                  <span className="text-[10px] font-bold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-full border border-emerald-200">
-                    Active
-                  </span>
+
+                  <div className="flex items-center gap-2.5 self-end sm:self-center">
+                    {/* Interactive Role Selector Dropdown */}
+                    <div className="relative flex items-center">
+                      <select
+                        value={emp.role}
+                        disabled={updateRoleMutation.isPending && updatingEmpId === emp.id}
+                        onChange={(e) => handleRoleChange(emp.id, e.target.value)}
+                        className={`text-xs font-extrabold pl-2.5 pr-7 py-1.5 rounded-xl border transition-all cursor-pointer shadow-sm outline-none appearance-none ${
+                          emp.role === "admin"
+                            ? "bg-purple-50 text-purple-700 border-purple-200 hover:border-purple-400 focus:ring-2 focus:ring-purple-200"
+                            : "bg-indigo-50 text-indigo-700 border-indigo-200 hover:border-indigo-400 focus:ring-2 focus:ring-indigo-200"
+                        } disabled:opacity-60`}
+                        title="Change role between Admin and Employee"
+                      >
+                        <option value="employee">👤 Employee</option>
+                        <option value="admin">🛡️ Admin</option>
+                      </select>
+                      <div className="absolute right-2 pointer-events-none text-slate-400">
+                        {updateRoleMutation.isPending && updatingEmpId === emp.id ? (
+                          <Loader2 className="w-3.5 h-3.5 animate-spin text-indigo-600" />
+                        ) : (
+                          <span className="text-[9px]">▼</span>
+                        )}
+                      </div>
+                    </div>
+
+                    <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-lg border border-emerald-200 shrink-0">
+                      Active
+                    </span>
+                  </div>
                 </div>
               ))}
             </div>
