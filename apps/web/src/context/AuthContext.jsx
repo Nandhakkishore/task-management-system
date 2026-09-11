@@ -49,7 +49,14 @@ export const AuthProvider = ({ children }) => {
         return { success: true, user: userData };
       }
     } catch (err) {
-      const message = err.response?.data?.error || "Failed to log in. Please check your credentials.";
+      let message = err.response?.data?.error;
+      if (!message) {
+        if (err.message === "Network Error" || !err.response) {
+          message = "Cannot reach server. If the backend is waking up from sleep, please try again in 10-20 seconds.";
+        } else {
+          message = "Failed to log in. Please check your credentials.";
+        }
+      }
       setAuthError(message);
       return { success: false, error: message };
     }
