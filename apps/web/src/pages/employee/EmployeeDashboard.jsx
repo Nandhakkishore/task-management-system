@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { Navigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "../../lib/api";
 import { useAuth } from "../../context/AuthContext";
@@ -13,6 +14,12 @@ import {
 
 export const EmployeeDashboard = () => {
   const { user } = useAuth();
+
+  // If an admin navigates to /employee, redirect to /admin
+  if (user && user.role === "admin") {
+    return <Navigate to="/admin" replace />;
+  }
+
   const queryClient = useQueryClient();
 
   const [search, setSearch] = useState("");

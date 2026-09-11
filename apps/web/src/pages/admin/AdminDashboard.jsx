@@ -1,6 +1,8 @@
 import React, { useState } from "react";
+import { Navigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "../../lib/api";
+import { useAuth } from "../../context/AuthContext";
 import { Navbar } from "../../components/Navbar";
 import { StatsCard } from "../../components/StatsCard";
 import { PriorityBadge, StatusBadge } from "../../components/Badge";
@@ -21,6 +23,13 @@ import {
 } from "lucide-react";
 
 export const AdminDashboard = () => {
+  const { user } = useAuth();
+
+  // Strict role guard: non-admin accounts cannot render this page
+  if (user && user.role !== "admin") {
+    return <Navigate to="/unauthorized" replace />;
+  }
+
   const queryClient = useQueryClient();
 
   // Filter & Pagination state

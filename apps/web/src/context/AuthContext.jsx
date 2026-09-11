@@ -102,8 +102,8 @@ export const ProtectedRoute = ({ children, requiredRole }) => {
 
   if (loading) {
     return (
-      <div class="min-h-screen flex items-center justify-center bg-[#090d16]">
-        <div class="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-500"></div>
+      <div className="min-h-screen flex items-center justify-center bg-[#f8fafc]">
+        <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-indigo-600"></div>
       </div>
     );
   }
@@ -113,8 +113,10 @@ export const ProtectedRoute = ({ children, requiredRole }) => {
   }
 
   if (requiredRole && user?.role !== requiredRole) {
-    // Redirect admin to /admin and employee to /dashboard
-    const defaultPath = user?.role === "admin" ? "/admin" : "/dashboard";
+    if (requiredRole === "admin" && user?.role === "employee") {
+      return <Navigate to="/unauthorized" replace />;
+    }
+    const defaultPath = user?.role === "admin" ? "/admin" : "/employee";
     return <Navigate to={defaultPath} replace />;
   }
 

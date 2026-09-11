@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
-import { Zap, Lock, Mail, ShieldAlert, ArrowRight, UserCheck } from "lucide-react";
+import { Zap, Lock, Mail, ShieldAlert, ArrowRight } from "lucide-react";
 
 export const LoginPage = () => {
   const [email, setEmail] = useState("");
@@ -29,20 +29,17 @@ export const LoginPage = () => {
     setIsSubmitting(false);
 
     if (res.success) {
-      const destination = from || (res.user.role === "admin" ? "/admin" : "/dashboard");
+      let destination = res.user.role === "admin" ? "/admin" : "/employee";
+      if (from && from !== "/login" && from !== "/unauthorized") {
+        if (res.user.role === "admin" && from.startsWith("/admin")) {
+          destination = from;
+        } else if (res.user.role === "employee" && (from.startsWith("/employee") || from.startsWith("/dashboard"))) {
+          destination = "/employee";
+        }
+      }
       navigate(destination, { replace: true });
     } else {
       setErrorMsg(res.error || "Invalid email or password");
-    }
-  };
-
-  const handleQuickLogin = (role) => {
-    if (role === "admin") {
-      setEmail("admin@example.com");
-      setPassword("AdminPass123!");
-    } else {
-      setEmail("employee@example.com");
-      setPassword("EmployeePass123!");
     }
   };
 
@@ -127,31 +124,6 @@ export const LoginPage = () => {
               )}
             </button>
           </form>
-
-          {/* Quick Fill Demo Controls */}
-          <div className="mt-8 pt-6 border-t border-slate-100">
-            <p className="text-center text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3">
-              Test Credentials (Click to Autofill)
-            </p>
-            <div className="grid grid-cols-2 gap-3">
-              <button
-                type="button"
-                onClick={() => handleQuickLogin("admin")}
-                className="py-2.5 px-3 bg-slate-50 hover:bg-slate-100 border border-slate-200 hover:border-indigo-300 rounded-xl text-xs font-bold text-slate-700 transition-all flex items-center justify-center gap-1.5 shadow-sm"
-              >
-                <UserCheck className="w-3.5 h-3.5 text-indigo-600" />
-                Admin Account
-              </button>
-              <button
-                type="button"
-                onClick={() => handleQuickLogin("employee")}
-                className="py-2.5 px-3 bg-slate-50 hover:bg-slate-100 border border-slate-200 hover:border-purple-300 rounded-xl text-xs font-bold text-slate-700 transition-all flex items-center justify-center gap-1.5 shadow-sm"
-              >
-                <UserCheck className="w-3.5 h-3.5 text-purple-600" />
-                Employee Account
-              </button>
-            </div>
-          </div>
         </div>
       </div>
     </div>

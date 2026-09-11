@@ -14,6 +14,7 @@ export const Navbar = () => {
   };
 
   const isAdmin = user?.role === "admin";
+  const homePath = isAdmin ? "/admin" : "/employee";
 
   return (
     <header className="sticky top-0 z-40 bg-white/80 backdrop-blur-xl border-b border-slate-200/80 shadow-sm">
@@ -21,28 +22,34 @@ export const Navbar = () => {
         <div className="flex items-center justify-between h-16">
           {/* Brand Logo */}
           <div className="flex items-center gap-3">
-            <Link to={isAdmin ? "/admin" : "/dashboard"} className="flex items-center gap-2.5 group">
-              <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-indigo-600 to-purple-600 flex items-center justify-center text-white font-black shadow-md shadow-indigo-500/20 group-hover:scale-105 transition-transform">
+            <Link to={homePath} className="flex items-center gap-2.5 group">
+              <div className={`h-10 w-10 rounded-xl flex items-center justify-center text-white font-black shadow-md transition-transform group-hover:scale-105 ${
+                isAdmin ? "bg-gradient-to-br from-purple-600 to-indigo-600 shadow-purple-500/20" : "bg-gradient-to-br from-indigo-600 to-blue-600 shadow-indigo-500/20"
+              }`}>
                 <Zap className="w-5 h-5 fill-white" />
               </div>
               <div>
-                <span className="text-lg font-black text-slate-900 tracking-tight">Task<span className="text-indigo-600">Flow</span></span>
-                <span className="block text-[9px] uppercase font-bold text-slate-500 tracking-widest">Enterprise Pro</span>
+                <span className="text-lg font-black text-slate-900 tracking-tight">Task<span className={isAdmin ? "text-purple-600" : "text-indigo-600"}>Flow</span></span>
+                <span className="block text-[9px] uppercase font-extrabold text-slate-500 tracking-widest">
+                  {isAdmin ? "Admin Executive Portal" : "Employee Task Workspace"}
+                </span>
               </div>
             </Link>
 
             {/* Nav Tabs */}
             <nav className="hidden md:flex items-center ml-8 space-x-1">
               <Link
-                to={isAdmin ? "/admin" : "/dashboard"}
+                to={homePath}
                 className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 ${
-                  location.pathname === "/admin" || location.pathname === "/dashboard"
-                    ? "bg-indigo-50 text-indigo-600 border border-indigo-200 shadow-sm"
+                  location.pathname === homePath
+                    ? isAdmin
+                      ? "bg-purple-50 text-purple-700 border border-purple-200 shadow-sm"
+                      : "bg-indigo-50 text-indigo-600 border border-indigo-200 shadow-sm"
                     : "text-slate-600 hover:text-slate-900 hover:bg-slate-100"
                 }`}
               >
-                <CheckSquare className="w-4 h-4" />
-                Tasks Dashboard
+                {isAdmin ? <Shield className="w-4 h-4 text-purple-600" /> : <CheckSquare className="w-4 h-4 text-indigo-600" />}
+                {isAdmin ? "Admin Overview" : "My Assigned Tasks"}
               </Link>
             </nav>
           </div>
@@ -50,7 +57,9 @@ export const Navbar = () => {
           {/* User Account Controls */}
           <div className="flex items-center gap-4">
             <div className="flex items-center gap-3 px-3.5 py-1.5 rounded-2xl bg-slate-100/80 border border-slate-200">
-              <div className="h-8 w-8 rounded-xl bg-indigo-600 text-white font-extrabold text-xs uppercase flex items-center justify-center shadow-sm">
+              <div className={`h-8 w-8 rounded-xl text-white font-extrabold text-xs uppercase flex items-center justify-center shadow-sm ${
+                isAdmin ? "bg-purple-600" : "bg-indigo-600"
+              }`}>
                 {user?.name ? user.name.slice(0, 2) : "US"}
               </div>
               <div className="hidden sm:block text-left">
@@ -60,7 +69,7 @@ export const Navbar = () => {
                     isAdmin ? "bg-purple-100 text-purple-700 border border-purple-200" : "bg-indigo-100 text-indigo-700 border border-indigo-200"
                   }`}>
                     {isAdmin ? <Shield className="w-2.5 h-2.5 mr-0.5" /> : <User className="w-2.5 h-2.5 mr-0.5" />}
-                    {user?.role}
+                    {isAdmin ? "Administrator" : "Employee"}
                   </span>
                 </div>
               </div>
