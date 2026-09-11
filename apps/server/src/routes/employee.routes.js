@@ -94,65 +94,66 @@ router.post(
   })
 );
 
-// PATCH /api/employees/:id/role - Update employee role (admin only)
-router.patch(
-  "/:id/role",
-  asyncHandler(async (req, res) => {
-    const { role } = req.body;
-    const targetUserId = req.params.id;
+// Handler for updating employee role
+const handleRoleUpdate = asyncHandler(async (req, res) => {
+  const { role } = req.body;
+  const targetUserId = req.params.id;
 
-    if (!role || !["admin", "employee"].includes(role)) {
+  if (!role || !["admin", "employee"].includes(role)) {
+    return res.status(400).json({
+      success: false,
+      error: "Invalid role. Role must be 'admin' or 'employee'",
+    });
+  }
+
+  // Prevent demoting the only remaining admin
+  if (req.user.id === targetUserId && role !== "admin") {
+    const [adminCount] = await db
+      .select({ total: count() })
+      .from(users)
+      .where(eq(users.role, "admin"));
+    if (Number(adminCount?.total || 0) <= 1) {
       return res.status(400).json({
         success: false,
-        error: "Invalid role. Role must be 'admin' or 'employee'",
+        error: "Cannot demote the only remaining administrator",
       });
     }
+  }
 
-    // Prevent demoting the only remaining admin
-    if (req.user.id === targetUserId && role !== "admin") {
-      const [adminCount] = await db
-        .select({ total: count() })
-        .from(users)
-        .where(eq(users.role, "admin"));
-      if (Number(adminCount?.total || 0) <= 1) {
-        return res.status(400).json({
-          success: false,
-          error: "Cannot demote the only remaining administrator",
-        });
-      }
-    }
-
-    const [updatedUser] = await db
-      .update(users)
-      .set({
-        role,
-        updatedAt: new Date(),
-      })
-      .where(eq(users.id, targetUserId))
-      .returning({
-        id: users.id,
-        name: users.name,
-        email: users.email,
-        role: users.role,
-        department: users.department,
-        isActive: users.isActive,
-        createdAt: users.createdAt,
-      });
-
-    if (!updatedUser) {
-      return res.status(404).json({
-        success: false,
-        error: "Employee not found",
-      });
-    }
-
-    return res.status(200).json({
-      success: true,
-      message: `Role changed to ${role.toUpperCase()} for ${updatedUser.name}`,
-      employee: updatedUser,
+  const [updatedUser] = await db
+    .update(users)
+    .set({
+      role,
+      updatedAt: new Date(),
+    })
+    .where(eq(users.id, targetUserId))
+    .returning({
+      id: users.id,
+      name: users.name,
+      email: users.email,
+      role: users.role,
+      department: users.department,
+      isActive: users.isActive,
+      createdAt: users.createdAt,
     });
-  })
-);
+
+  if (!updatedUser) {
+    return res.status(404).json({
+      success: false,
+      error: "Employee not found",
+    });
+  }
+
+  return res.status(200).json({
+    success: true,
+    message: `Role changed to ${role.toUpperCase()} for ${updatedUser.name}`,
+    employee: updatedUser,
+  });
+});
+
+// Support both PATCH and POST /api/employees/:id/role
+router.patch("/:id/role", handleRoleUpdate);
+router.post("/:id/role", handleRoleUpdate);
 
 // PATCH /api/employees/:id - Update general employee details (admin only)
 router.patch(
